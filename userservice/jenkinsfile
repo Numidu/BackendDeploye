@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/yourusername/my-fullstack-app.git'
+                git 'https://github.com/Numidu/BackendDeploye.git'
             }
         }
 
@@ -38,7 +38,7 @@ pipeline {
                 sshagent(['gcp_vm_key']) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ubuntu@<VM_EXTERNAL_IP> '
-                        cd ~/app || git clone https://github.com/yourusername/my-fullstack-app.git ~/app &&
+                        cd ~/app || git clone https://github.com/Numidu/BackendDeploye.git ~/app &&
                         cd ~/app &&
                         git pull &&
                         docker-compose down &&
