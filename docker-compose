@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ./userbackend
+    ports:
+      - "8082:8081" # hostPort:containerPort
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/testbackend
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_DATABASE: testbackend
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
