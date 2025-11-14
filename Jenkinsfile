@@ -45,7 +45,7 @@ pipeline {
             steps {
                 sshagent(['gcp_vm_key']) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no dnumidu@34.72.48.177 '
+                        ssh -o StrictHostKeyChecking=no dnumidu@34.44.230.107 '
                             cd ~/app || git clone https://github.com/Numidu/BackendDeploye.git ~/app &&
                             cd ~/app &&
                             git pull &&
