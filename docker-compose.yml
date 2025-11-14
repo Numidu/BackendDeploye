@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   backend:
     build: ./userservice
@@ -6,14 +8,14 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/testbackend
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_DATASOURCE_PASSWORD: mypassword123
     depends_on:
       - mysql
 
   mysql:
     image: mysql:8
     environment:
-      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_ROOT_PASSWORD: mypassword123
       MYSQL_DATABASE: testbackend
     ports:
       - "3307:3306"
