@@ -2,50 +2,67 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-        DOCKERHUB_USER = 'numidu'
+        IMAGE_NAME = "numidu/ampora_backend"
+        VM_USER = "dnumidu"
+        VM_IP = "34.44.230.107"
     }
 
     stages {
-        stage('Clone Repository') {
+
+        stage('Checkout') {
             steps {
-                git 'https://github.com/Numidu/BackendDeploye.git'
+                git branch: 'numidu',
+                    url: 'https://github.com/Numidu/BackendDeploye.git'
             }
         }
 
-        stage('Build Backend Image') {
+        stage('Build JAR') {
             steps {
-                dir('userservice') {
-                    sh 'docker build -t $DOCKERHUB_USER/backend .'
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $IMAGE_NAME:latest .'
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push $IMAGE_NAME:latest
+                    '''
                 }
             }
         }
 
-        
-
-        stage('Push Images to Docker Hub') {
+        stage('Deploy to GCP VM') {
             steps {
-                sh """
-                    echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_USER --password-stdin
-                    docker push $DOCKERHUB_USER/backend
-                   
-                """
-            }
-        }
-
-        stage('Deploy on GCP VM') {
-            steps {
-                sshagent(['gcp_vm_key']) {
-                    sh """
-                    ssh -o StrictHostKeyChecking=no dnumidu@34.72.48.177 '
-                        cd ~/app || git clone https://github.com/Numidu/BackendDeploye.git ~/app &&
-                        cd ~/app &&
-                        git pull &&
-                        docker-compose down &&
-                        docker-compose pull &&
-                        docker-compose up -d --build
-                    '
-                    """
+                withCredentials([
+                    string(credentialsId: 'db-password', variable: 'DB_PASSWORD'),
+                    string(credentialsId: 'google-api-key', variable: 'GOOGLE_API_KEY')
+                ]) {
+                    sshagent(['gcp_vm_key']) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no $VM_USER@$VM_IP '
+                            cd ~/app
+                            echo "DB_PASSWORD=$DB_PASSWORD" > .env
+                            echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env
+                            docker compose pull
+                            docker compose down
+                            docker compose up -d
+                        '
+                        """
+                    }
                 }
             }
         }
