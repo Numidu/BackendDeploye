@@ -40,23 +40,32 @@ pipeline {
             }
         }
 
-        stage('Deploy on GCP VM') {
-            steps {
-                sshagent(['gcp_vm_key']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no ampora-jenkins@104.197.153.74 "
-                            mkdir -p ~/app &&
-                            cd ~/app ||
-                            git clone https://github.com/Numidu/BackendDeploye.git ~/app &&
-                            cd ~/app &&
-                            git pull &&
-                            docker-compose down || true &&
-                            docker-compose pull &&
-                            docker-compose up -d --build
-                        "
-                    '''
-                }
+stage('Deploy to GCP VM') {
+    steps {
+        sshagent(['gcp_vm_key']) {
+            withCredentials([
+                string(credentialsId: 'db-password', variable: 'DB_PASSWORD'),
+                string(credentialsId: 'google-api-key', variable: 'GOOGLE_API_KEY')
+            ]) {
+                sh '''
+                    ssh -o StrictHostKeyChecking=no ampora-jenkins@104.197.153.74 << EOF
+                    set -e
+
+                    mkdir -p ~/app
+                    cd ~/app
+
+                    export SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD"
+                    export GOOGLE_API_KEY="$GOOGLE_API_KEY"
+
+                    docker compose pull
+                    docker compose down || true
+                    docker compose up -d
+                    EOF
+                '''
             }
         }
+    }
+}
+
     }
 }
